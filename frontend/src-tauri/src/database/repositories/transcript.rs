@@ -43,36 +43,58 @@ impl TranscriptsRepository {
 
         info!("Successfully created meeting with id: {}", meeting_id);
 
-        // 2. Save each transcript segment with audio timing fields
-        for segment in transcripts {
-            let transcript_id = format!("transcript-{}", Uuid::new_v4());
-            let result = sqlx::query(
-                "INSERT INTO transcripts (id, meeting_id, transcript, timestamp, audio_start_time, audio_end_time, duration)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)"
-            )
-            .bind(&transcript_id)
-            .bind(&meeting_id)
-            .bind(&segment.text)
-            .bind(&segment.timestamp)
-            .bind(segment.audio_start_time)
-            .bind(segment.audio_end_time)
-            .bind(segment.duration)
-            .execute(&mut *transaction)
-            .await;
-
+        // 2. Save transcript segments using batch INSERT for better performance
+        const BATCH_SIZE: usize = 100;
+        let total_segments = transcripts.len();
+        
+        for (batch_idx, chunk) in transcripts.chunks(BATCH_SIZE).enumerate() {
+            let mut query_builder = String::from(
+                "INSERT INTO transcripts (id, meeting_id, transcript, timestamp, audio_start_time, audio_end_time, duration) VALUES "
+            );
+            
+            let mut values_placeholders = Vec::new();
+            for _ in 0..chunk.len() {
+                values_placeholders.push("(?, ?, ?, ?, ?, ?, ?)");
+            }
+            query_builder.push_str(&values_placeholders.join(", "));
+            
+            let mut query = sqlx::query(&query_builder);
+            
+            for segment in chunk {
+                let transcript_id = format!("transcript-{}", Uuid::new_v4());
+                query = query
+                    .bind(&transcript_id)
+                    .bind(&meeting_id)
+                    .bind(&segment.text)
+                    .bind(&segment.timestamp)
+                    .bind(segment.audio_start_time)
+                    .bind(segment.audio_end_time)
+                    .bind(segment.duration);
+            }
+            
+            let result = query.execute(&mut *transaction).await;
+            
             if let Err(e) = result {
                 error!(
-                    "Failed to save transcript segment for meeting {}: {}",
-                    meeting_id, e
+                    "Failed to save transcript batch {} for meeting {}: {}",
+                    batch_idx, meeting_id, e
                 );
                 transaction.rollback().await?;
                 return Err(e);
             }
+            
+            info!(
+                "Saved batch {}/{} ({} segments) for meeting {}",
+                batch_idx + 1,
+                (total_segments + BATCH_SIZE - 1) / BATCH_SIZE,
+                chunk.len(),
+                meeting_id
+            );
         }
 
         info!(
-            "Successfully saved {} transcript segments for meeting {}",
-            transcripts.len(),
+            "Successfully saved {} transcript segments for meeting {} using batch INSERT",
+            total_segments,
             meeting_id
         );
 
