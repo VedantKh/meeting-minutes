@@ -49,6 +49,7 @@
 - [Features](#features)
 - [Installation](#installation)
 - [Key Features in Action](#key-features-in-action)
+- [Transcription Quality Guide](#transcription-quality-guide)
 - [System Architecture](#system-architecture)
 - [For Developers](#for-developers)
 - [Enterprise Solutions](#enterprise-solutions)
@@ -183,6 +184,25 @@ Built-in support for hardware acceleration across platforms:
 - **Windows/Linux**: NVIDIA (CUDA), AMD/Intel (Vulkan)
 
 Automatically enabled at build time - no configuration needed.
+
+## Transcription Quality Guide
+
+Getting the best transcription quality requires proper setup and configuration. If you're experiencing low-quality transcriptions compared to cloud services like Zoom, we have a comprehensive guide to help you:
+
+📖 **[Transcription Quality Troubleshooting Guide](docs/TRANSCRIPTION_QUALITY_GUIDE.md)**
+
+This guide covers:
+- **Model Selection**: Why Parakeet is recommended over Whisper for most use cases
+- **Audio Setup**: Microphone positioning, volume levels, and environment optimization
+- **VAD Configuration**: Choosing the right Voice Activity Detection preset for your meeting type
+- **Common Issues**: Solutions for cut-off sentences, errors, delays, and more
+- **Quality Metrics**: Understanding and monitoring your audio quality in real-time
+
+**Quick Tips:**
+- ✅ Use the **Parakeet model** for best quality (Settings → Transcript Settings)
+- ✅ Ensure microphone level is **50-75%** during normal speech
+- ✅ Choose a **quiet environment** or use noise-canceling headphones
+- ✅ Position microphone **6-12 inches** from your mouth
 
 ## System Architecture
 

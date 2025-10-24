@@ -13,6 +13,9 @@ pub mod permissions;
 pub mod device_detection;
 pub mod diagnostics;
 pub mod ffmpeg_mixer;  // NEW: FFmpeg-style adaptive audio mixer
+pub mod quality_diagnostics;  // NEW: Audio quality monitoring for transcription
+pub mod quality_commands;  // NEW: Tauri commands for quality monitoring
+pub mod vad_presets;  // NEW: VAD presets for different meeting types
 
 // New simplified audio system
 pub mod recording_state;
@@ -97,6 +100,18 @@ pub use diagnostics::{
 
 // Export FFmpeg mixer
 pub use ffmpeg_mixer::{FFmpegAudioMixer, BufferStats, RNNOISE_APPLY_ENABLED};
+
+// Export quality diagnostics
+pub use quality_diagnostics::{AudioQualityMetrics, AudioQualityMonitor};
+
+// Export quality commands
+pub use quality_commands::{
+    QualityMonitorState, AudioQualityReport,
+    init_quality_monitor, get_audio_quality, is_audio_quality_acceptable, analyze_audio_sample
+};
+
+// Export VAD presets
+pub use vad_presets::VadPreset;
 
 pub use vad::{extract_speech_16k};
 
