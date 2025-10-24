@@ -409,6 +409,57 @@ class DatabaseManager:
             logger.error(f"Error saving transcript: {str(e)}")
             raise
 
+    async def save_meeting_transcripts_batch(self, meeting_id: str, transcripts: list):
+        """Save multiple transcripts for a meeting in a single batch operation
+        
+        Args:
+            meeting_id: The meeting ID
+            transcripts: List of transcript dictionaries with keys:
+                - text: transcript text
+                - timestamp: timestamp string
+                - summary: summary text (optional, default "")
+                - action_items: action items text (optional, default "")
+                - key_points: key points text (optional, default "")
+                - audio_start_time: audio start time (optional, default None)
+                - audio_end_time: audio end time (optional, default None)
+                - duration: duration (optional, default None)
+        """
+        if not transcripts:
+            logger.warning(f"No transcripts to save for meeting_id: {meeting_id}")
+            return True
+            
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                batch_data = []
+                for transcript in transcripts:
+                    batch_data.append((
+                        meeting_id,
+                        transcript.get('text', ''),
+                        transcript.get('timestamp', ''),
+                        transcript.get('summary', ''),
+                        transcript.get('action_items', ''),
+                        transcript.get('key_points', ''),
+                        transcript.get('audio_start_time'),
+                        transcript.get('audio_end_time'),
+                        transcript.get('duration')
+                    ))
+                
+                cursor.executemany("""
+                    INSERT INTO transcripts (
+                        meeting_id, transcript, timestamp, summary, action_items, key_points,
+                        audio_start_time, audio_end_time, duration
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, batch_data)
+                
+                conn.commit()
+                logger.info(f"Successfully saved {len(transcripts)} transcripts in batch for meeting_id: {meeting_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error saving transcripts in batch: {str(e)}")
+            raise
+
     async def get_meeting(self, meeting_id: str):
         """Get a meeting by ID with all its transcripts"""
         try:

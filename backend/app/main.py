@@ -526,22 +526,22 @@ async def save_transcript(request: SaveTranscriptRequest):
         # Save the meeting with folder path (if provided)
         await db.save_meeting(meeting_id, request.meeting_title, folder_path=request.folder_path)
 
-        # Save each transcript segment with NEW timestamp fields for playback sync
+        transcripts_data = []
         for transcript in request.transcripts:
-            await db.save_meeting_transcript(
-                meeting_id=meeting_id,
-                transcript=transcript.text,
-                timestamp=transcript.timestamp,
-                summary="",
-                action_items="",
-                key_points="",
-                # NEW: Recording-relative timestamps for audio-transcript synchronization
-                audio_start_time=transcript.audio_start_time,
-                audio_end_time=transcript.audio_end_time,
-                duration=transcript.duration
-            )
+            transcripts_data.append({
+                'text': transcript.text,
+                'timestamp': transcript.timestamp,
+                'summary': '',
+                'action_items': '',
+                'key_points': '',
+                'audio_start_time': transcript.audio_start_time,
+                'audio_end_time': transcript.audio_end_time,
+                'duration': transcript.duration
+            })
+        
+        await db.save_meeting_transcripts_batch(meeting_id, transcripts_data)
 
-        logger.info("Transcripts saved successfully")
+        logger.info(f"Transcripts saved successfully: {len(transcripts_data)} segments in batch")
         return {"status": "success", "message": "Transcript saved successfully", "meeting_id": meeting_id}
     except Exception as e:
         logger.error(f"Error saving transcript: {str(e)}", exc_info=True)
