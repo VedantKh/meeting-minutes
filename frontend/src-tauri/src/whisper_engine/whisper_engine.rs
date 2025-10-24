@@ -49,28 +49,51 @@ pub struct WhisperEngine {
 }
 
 impl WhisperEngine {
-    /// Detect available GPU acceleration capabilities
+    /// Detect available GPU acceleration capabilities with enhanced logging
+    /// 
     fn detect_gpu_acceleration() -> bool {
         // On macOS, prefer Metal GPU acceleration
         if cfg!(target_os = "macos") {
-            log::info!("macOS detected - attempting to enable Metal GPU acceleration");
+            log::info!("🍎 macOS detected - Metal GPU acceleration enabled by default");
+            #[cfg(feature = "metal")]
+            log::info!("✅ Apple Metal GPU support: ENABLED");
+            #[cfg(feature = "coreml")]
+            log::info!("✅ Apple CoreML acceleration: ENABLED");
             return true; // Enable GPU by default on macOS, whisper-rs will fallback if needed
         }
 
-        // Check for CUDA support on other platforms
         if cfg!(feature = "cuda") {
-            log::info!("CUDA feature enabled - attempting GPU acceleration");
+            log::info!("🚀 CUDA GPU acceleration ENABLED - Optimized for NVIDIA GPUs");
+            log::info!("💡 Issue #212 Fix: CUDA is now enabled by default on Windows for better transcription performance");
             return true;
         }
 
-        // Check for Vulkan support on other platforms
+        // Check for Vulkan support (AMD/Intel GPUs)
         if cfg!(feature = "vulkan") {
-            log::info!("Vulkan feature enabled - attempting GPU acceleration");
+            log::info!("🎮 Vulkan GPU acceleration enabled - Compatible with AMD/Intel GPUs");
             return true;
         }
 
-        // Fall back to CPU
-        log::info!("No GPU acceleration features detected - using CPU processing");
+        // Check for other GPU acceleration methods
+        #[cfg(feature = "hipblas")]
+        {
+            log::info!("🔥 AMD ROCm HIP acceleration enabled");
+            return true;
+        }
+
+        #[cfg(feature = "openblas")]
+        {
+            log::info!("⚡ OpenBLAS CPU optimization enabled");
+            return true;
+        }
+
+        // Fall back to CPU-only processing
+        log::warn!("⚠️  No GPU acceleration features detected - using CPU-only processing");
+        log::warn!("💡 For better performance, consider enabling GPU acceleration:");
+        log::warn!("   • Windows (NVIDIA): --features cuda");
+        log::warn!("   • Windows (AMD/Intel): --features vulkan");
+        log::warn!("   • Linux (NVIDIA): --features cuda");
+        log::warn!("   • Linux (AMD): --features hipblas");
         false
     }
 
